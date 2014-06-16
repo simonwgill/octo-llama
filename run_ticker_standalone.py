@@ -1,26 +1,11 @@
-########################################
-# To run this demo using py-amqplib, 
-# uncomment this block, and  comment out
-# the next block.
-########################################
+import os
 
-#from amqplib_client import *
-#publisher = PyAmqpLibPublisher(exchange_name="my_exchange")
+parentdir = os.path.dirname(os.path.abspath(__file__))
+os.sys.path.insert(0,parentdir)
 
-########################################
-# To run this demo using pika,
-# uncomment this block, and comment out
-# the previous block
-########################################
+from llama.pika_client import *
+publisher = PikaPublisher("stock-ticker")
 
-from pika_client import *
-publisher = PikaPublisher(exchange_name="my_exchange")
-
-########################################
-# This part doesn't have to change
-########################################
-
-from ticker_system import *
+from example_producer.ticker_system import Ticker
 ticker = Ticker(publisher, "")
-ticker.monitor()
-
+ticker.begin_wait_loop()

@@ -1,3 +1,4 @@
+import time
 import pickle
 
 DEFAULT_SLEEP_TIME = 0.5
@@ -16,7 +17,7 @@ class Llama(object):
     self.do_message(message)
 
   def monitor(self):
-    self.client.monitor(self.qname, self.handle_pika_delivery)
+    self.client.monitor(self.queuename, self.handle_pika_delivery)
 
   def publish(self, message):
     self.client.publish(pickle.dumps(message), routing_key="")
@@ -32,5 +33,5 @@ class Llama(object):
   def do_action(self):
     pass
 
-  def d0_message(self, message):
+  def do_message(self, message):
     pass

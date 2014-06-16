@@ -2,9 +2,11 @@ import pickle
 import random
 import time
 
-class Ticker(object):
+from llama.llama import Llama
+
+class Ticker(Llama):
     def __init__(self, publisher, qname):
-        self.publisher = publisher
+        super(Ticker, self).__init__(publisher, qname)
 
         # This quickly creates four random stock symbols
         chars = range(ord("A"), ord("Z")+1)
@@ -14,9 +16,8 @@ class Ticker(object):
         self.last_quote = {}
         self.counter = 0
         self.time_format = "%a, %d %b %Y %H:%M:%S +0000"
-        self.qname = qname
 
-    def get_quote(self):
+    def do_action(self):
         symbol = random.choice(self.stock_symbols)
         if symbol in self.last_quote:
             previous_quote = self.last_quote[symbol]
@@ -28,15 +29,6 @@ class Ticker(object):
             new_quote = random.uniform(10.0, 250.0)
             self.last_quote[symbol] = new_quote
         self.counter += 1
-        return (symbol, self.last_quote[symbol], time.gmtime(), self.counter)
-   
-
-    def monitor(self):
-        while True:
-            quote = self.get_quote()
-            print("New quote is %s" % str(quote))
-            self.publisher.publish(pickle.dumps((quote[0], quote[1], time.strftime(self.time_format, quote[2]), quote[3])), routing_key="")
-            secs = random.uniform(0.1, 0.5)
-            #print("Sleeping %s seconds..." % secs)
-            time.sleep(secs)
-        
+        quote = (symbol, self.last_quote[symbol], time.gmtime(), self.counter)
+        print("New quote is %s" % str(quote))
+        self.publish(pickle.dumps((quote[0], quote[1], time.strftime(self.time_format, quote[2]), quote[3])))        

@@ -1,11 +1,11 @@
 import pickle
 import random
 import uuid
-from llama import Llama
+from llama.llama import Llama
 
 class Buyer(Llama):
     def __init__(self, client, qname, trend=5):
-        super(Llama, self).__init__(client, uuid.uuid4().hex)
+        super(Buyer, self).__init__(client, uuid.uuid4().hex)
         self.holdings = {}
         self.cash = 100000.0
         self.history = {}
