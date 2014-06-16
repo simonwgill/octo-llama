@@ -2,6 +2,9 @@ import pickle
 import random
 import uuid
 from llama.llama import Llama
+from pycassa.pool import ConnectionPool
+from pycassa.columnfamily import ColumnFamily
+from pycassa.index import *
 
 class Buyer(Llama):
     def __init__(self, client, qname, trend=5):
@@ -10,6 +13,9 @@ class Buyer(Llama):
         self.cash = 100000.0
         self.history = {}
         self.trend = trend
+        self.pool = ConnectionPool('example_consumer_Buyer')
+        self.holdings_history = ColumnFamily(pool, 'Holdings')
+        self.quote_history = ColumnFamily(pool, 'Quotes')
 
     def do_message(self, quote):
         symbol, price, date, counter = quote
