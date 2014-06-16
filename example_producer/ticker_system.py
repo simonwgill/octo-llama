@@ -31,4 +31,4 @@ class Ticker(Llama):
         self.counter += 1
         quote = (symbol, self.last_quote[symbol], time.gmtime(), self.counter)
         print("New quote is %s" % str(quote))
-        self.publish(pickle.dumps((quote[0], quote[1], time.strftime(self.time_format, quote[2]), quote[3])))        
+        self.publish((quote[0], quote[1], time.strftime(self.time_format, quote[2]), quote[3]))        
