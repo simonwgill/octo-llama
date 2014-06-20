@@ -1,5 +1,7 @@
 import time
 import pickle
+import threading
+import base64
 
 DEFAULT_SLEEP_TIME = 0.5
 
@@ -12,15 +14,22 @@ class Llama(object):
     self.handle(channel, method.delivery_tag, body)
 
   def handle(self, channel, delivery_tag, body):
-    message = pickle.loads(body)
+    message = pickle.loads(base64.b64decode(body))
     channel.basic_ack(delivery_tag = delivery_tag)
     self.do_message(message)
 
   def monitor(self):
-    self.client.monitor(self.queuename, self.handle_pika_delivery)
+    self.monitorthread = threading.Thread(target=self.client.monitor, args=(self.queuename, self.handle_pika_delivery))
+    self.monitorthread.start()
 
-  def publish(self, message):
-    self.client.publish(pickle.dumps(message), routing_key="")
+  def publish(self, message, queuename=None):
+    if queuename is None:
+      queuename = self.queuename
+    print type(message)
+    body = pickle.dumps(message)
+    print type(body)
+    print body
+    self.client.publish(body, routing_key=queuename)
 
   def get_sleep_time(self):
     return DEFAULT_SLEEP_TIME

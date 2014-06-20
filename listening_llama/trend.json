@@ -1,0 +1,72 @@
+{
+  "as_of":"2014-06-20T11:53:18Z",
+  "created_at":"2014-06-20T11:42:32Z",
+  "locations":[
+    {
+      "name":"Worldwide",
+      "woeid":1
+    }
+  ],
+  "trends":[
+    {
+      "name":"#6YearsOfCampRock",
+      "promoted_content":null,
+      "query":"%236YearsOfCampRock",
+      "url":"http://twitter.com/search?q=%236YearsOfCampRock"
+    },
+    {
+      "name":"#IndonesiaHEBAT_guebanget",
+      "promoted_content":null,
+      "query":"%23IndonesiaHEBAT_guebanget",
+      "url":"http://twitter.com/search?q=%23IndonesiaHEBAT_guebanget"
+    },
+    {
+      "name":"#HiCrush",
+      "promoted_content":null,
+      "query":"%23HiCrush",
+      "url":"http://twitter.com/search?q=%23HiCrush"
+    },
+    {
+      "name":"#JujurMerakyatSederhana",
+      "promoted_content":null,
+      "query":"%23JujurMerakyatSederhana",
+      "url":"http://twitter.com/search?q=%23JujurMerakyatSederhana"
+    },
+    {
+      "name":"#SenYineALLAHdeKalbim",
+      "promoted_content":null,
+      "query":"%23SenYineALLAHdeKalbim",
+      "url":"http://twitter.com/search?q=%23SenYineALLAHdeKalbim"
+    },
+    {
+      "name":"Bonjour Niall",
+      "promoted_content":null,
+      "query":"%22Bonjour+Niall%22",
+      "url":"http://twitter.com/search?q=%22Bonjour+Niall%22"
+    },
+    {
+      "name":"RIP Ibrahim Toure",
+      "promoted_content":null,
+      "query":"%22RIP+Ibrahim+Toure%22",
+      "url":"http://twitter.com/search?q=%22RIP+Ibrahim+Toure%22"
+    },
+    {
+      "name":"SJ 7",
+      "promoted_content":null,
+      "query":"%22SJ+7%22",
+      "url":"http://twitter.com/search?q=%22SJ+7%22"
+    },
+    {
+      "name":"Awilka",
+      "promoted_content":null,
+      "query":"Awilka",
+      "url":"http://twitter.com/search?q=Awilka"
+    },
+    {
+      "name":"Nama Guru PKN",
+      "promoted_content":null,
+      "query":"%22Nama+Guru+PKN%22",
+      "url":"http://twitter.com/search?q=%22Nama+Guru+PKN%22"
+    }
+  ]
+}
