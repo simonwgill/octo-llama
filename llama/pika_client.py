@@ -19,6 +19,7 @@ class PikaPublisher(object):
                          body=message,
                          properties=pika.BasicProperties(
                                 content_type = "text/plain",
+                                content_encoding = "utf8",
                                 delivery_mode = 2, # persistent
                                 ),
                          block_on_flow_control = True)
