@@ -14,8 +14,8 @@ wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
 apt-key add rabbitmq-signing-key-public.asc
 
 apt-get update
-apt-get install rabbitmq-server
-apt-get install cassandra
-apt-get install python-pip git-core gcc
+apt-get install rabbitmq-server -y
+apt-get install cassandra -y
+apt-get install python-pip git-core gcc -y
 pip install -e git+https://github.com/pika/pika.git@v0.5.2#egg=pika-v0.5.2
 pip install pycassa
