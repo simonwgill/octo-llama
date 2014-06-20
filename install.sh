@@ -19,3 +19,4 @@ apt-get install cassandra -y
 apt-get install python-pip git-core gcc -y
 pip install -e git+https://github.com/pika/pika.git@v0.5.2#egg=pika-v0.5.2
 pip install pycassa
+pip install twython
