@@ -5,6 +5,9 @@ from llama.llama import Llama
 from pycassa.pool import ConnectionPool
 from pycassa.columnfamily import ColumnFamily
 from pycassa.index import *
+from pycassa.cassandra import ttypes
+import datetime
+
 
 class Buyer(Llama):
     def __init__(self, client, qname, trend=5):
@@ -14,13 +17,28 @@ class Buyer(Llama):
         self.history = {}
         self.trend = trend
         self.pool = ConnectionPool('example_consumer_Buyer')
-        self.holdings_history = ColumnFamily(pool, 'Holdings')
-        self.quote_history = ColumnFamily(pool, 'Quotes')
+        self.stored_holdings = ColumnFamily(self.pool, 'Holdings')
+        self.quote_history = ColumnFamily(self.pool, 'Quotes')
+        self.stored_cash = ColumnFamily(self.pool, 'Cash')
 
-    def do_message(self, quote):
-        symbol, price, date, counter = quote
-        #print "Thinking about whether to buy or sell %s at %s" % (symbol, price)
+        try:
+          cash = self.stored_cash.get('current')
+          self.cash = cash['amount']
+        except ttypes.NotFoundException:
+          self.stored_cash.insert('current', { 'amount': self.cash })
 
+        for symbol, columns in self.stored_holdings.get_range():
+          self.holdings[symbol] = (columns['number_of_shares'], columns['price'], columns['cost'])
+
+        date_expression = create_index_expression('timestamp', datetime.date.today(), GT)
+        date_clause = create_index_clause([date_expression], count=1000)
+
+        for key, columns in self.quote_history.get_range():
+          symbol = columns['symbol']
+          price = columns['price']
+          self.add_quote(symbol, price)
+
+    def add_quote(self, symbol, price):
         if symbol not in self.history: 
             self.history[symbol] = [price]
         else:
@@ -35,6 +53,17 @@ class Buyer(Llama):
             price_low, price_max, price_avg = (-1, -1, -1)
             print "%s quotes until we start deciding whether to buy or sell %s" % (self.trend - len(self.history[symbol]), symbol)
             #print "Recent history of %s is %s" % (symbol, self.history[symbol])
+
+        return (price_low, price_max, price_avg)
+
+
+    def do_message(self, quote):
+        symbol, price, date, counter = quote
+        #print "Thinking about whether to buy or sell %s at %s" % (symbol, price)
+
+        price_low, price_max, price_avg = self.add_quote(symbol, price)
+
+        self.save_quote(symbol, price)
 
         if price_low == -1: return
 
@@ -53,8 +82,8 @@ class Buyer(Llama):
                 cost = shares_to_buy * price
                 print "Cost is %s, cash is %s" % (cost, self.cash)
                 if cost < self.cash:
-                    self.holdings[symbol] = (shares_to_buy, price, cost)
-                    self.cash -= cost
+                    self.buy_holdings(symbol, shares_to_buy, price, cost)
+                    self.update_cash(-cost)
                     print "Cash is now %s" % self.cash
                 else:
                     print "Unfortunately, I don't have enough cash at this time."
@@ -65,7 +94,25 @@ class Buyer(Llama):
                 print "Sale value is %s" % sale_value
                 print "Holdings value is %s" % self.holdings[symbol][2]
                 print "Total net is %s" % (sale_value - self.holdings[symbol][2])
-                self.cash += sale_value
+                self.update_cash(sale_value)
                 print "Cash is now %s" % self.cash
-                del self.holdings[symbol]
+                self.sell_holdings(symbol)
 
+    def update_cash(self, change):
+      self.cash += change
+      cash = self.stored_cash.get('current')
+      cash['amount'] = self.cash
+      self.stored_cash.insert('current', cash)
+
+    def buy_holdings(self, symbol, shares_to_buy, price, cost):
+      self.holdings[symbol] = (shares_to_buy, price, cost)
+      stored_holding = {'number_of_shares': shares_to_buy, 'price': price, 'cost': cost}
+      self.stored_holdings.insert(symbol, stored_holding)
+
+    def sell_holdings(self, symbol):
+      del self.holdings[symbol]
+      self.stored_holdings.remove(symbol)
+
+    def save_quote(self, symbol, price):
+      key = str(uuid.uuid4())
+      self.quote_history.insert(key, { 'symbol': symbol, 'price': price })
