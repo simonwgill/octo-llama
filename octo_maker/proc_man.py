@@ -1,6 +1,8 @@
 
+import subprocess
 import threading
 import datetime
+import shlex
 import time
 
 from utils import TimePoint
@@ -14,11 +16,17 @@ class LocalProcess(object):
 		self.retries = 0
 		self.max_retries = 5
 		
+		self.process_handle = None
 		self.invocation = invocation
 	
 	def invoke(self):
 		print "[octo-maker:proc-man] invoking process: '%s'" % self.invocation
-		self.os_pid = None # TODO: invoke process for real and get PID
+		parsed = shlex.split(self.invocation)
+		try:
+			self.process_handle = subprocess.Popen(parsed, stdout=subprocess.PIPE)
+			self.os_pid = self.process_handle.pid
+		except OSError, e:
+			print "os error:", e
 	
 	def heartbeat(self):
 		still_alive = True
@@ -34,7 +42,10 @@ class LocalProcess(object):
 		return still_alive
 	
 	def is_process_alive(self):
-		return True # determine if process by self.os_pid is still alive
+		if self.process_handle is None:
+			return False
+			
+		return (self.process_handle.poll() is None)
 
 class ProcessManager(object):
 	def __init__(self):
