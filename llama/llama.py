@@ -14,7 +14,7 @@ class Llama(object):
     self.handle(channel, method.delivery_tag, body)
 
   def handle(self, channel, delivery_tag, body):
-    message = pickle.loads(base64.b64decode(body))
+    message = pickle.loads(body)
     channel.basic_ack(delivery_tag = delivery_tag)
     self.do_message(message)
 
@@ -25,10 +25,7 @@ class Llama(object):
   def publish(self, message, queuename=None):
     if queuename is None:
       queuename = self.queuename
-    print type(message)
-    body = pickle.dumps(message)
-    print type(body)
-    print body
+    body = pickle.dumps(message, 2)
     self.client.publish(body, routing_key=queuename)
 
   def get_sleep_time(self):
