@@ -14,7 +14,7 @@ class Llama(object):
     self.handle(channel, method.delivery_tag, body)
 
   def handle(self, channel, delivery_tag, body):
-    message = pickle.loads(body)
+    message = pickle.loads(base64.b64decode(body))
     channel.basic_ack(delivery_tag = delivery_tag)
     self.do_message(message)
 
