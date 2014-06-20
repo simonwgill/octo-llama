@@ -7,5 +7,5 @@ from llama.pika_client import *
 publisher = PikaPublisher("demonstration")
 
 from effector_llama.effector import Effector
-effector = Effector(publisher, "trend_to_track", "example@email.local")
+effector = Effector(publisher, "trend_to_track", "simonwgill@gmail.com")
 effector.monitor()
