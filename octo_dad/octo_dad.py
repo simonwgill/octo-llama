@@ -191,31 +191,43 @@ class OctoDad(BaseHTTPServer.HTTPServer):
 		
 		pika.asyncore_loop()
 	
+	def update_hosts(self, parent_uuid, processes=None):
+		if parent_uuid not in self.known_hosts.keys():
+			if processes is None:
+				processes = []
+			self.known_hosts[parent_uuid] = KnownHost(parent_uuid, processes)
+		else:
+			self.known_hosts[parent_uuid].heard_from(processes)
+			
+		too_old = []
+		for key in self.known_hosts.keys():
+			node = self.known_hosts[key]
+			if node.seconds_since_contact() >= 180:
+				too_old.append(key)
+		
+		for key in too_old:
+			del self.known_hosts[key]
+	
 	def handle_process_heartbeat(self, channel, method, properties, body):
 		message = cPickle.loads(body)
 		
 		#print "[octo-dad] heartbeat:", message.parent_uuid, message.process_ids
-		if message.parent_uuid not in self.known_hosts.keys():
-			self.known_hosts[message.parent_uuid] = KnownHost(message.parent_uuid, message.process_ids)
-		else:
-			self.known_hosts[message.parent_uuid].heard_from(message.process_ids)
+		self.update_hosts(message.parent_uuid, message.process_ids)
 	
 	def handle_control_message(self, channel, method, properties, body):
 		message = cPickle.loads(body)
 		
-		if message.parent_uuid not in self.known_hosts.keys():
-			self.known_hosts[message.parent_uuid] = KnownHost(message.parent_uuid, [])
-		else:
-			self.known_hosts[message.parent_uuid].heard_from()
+		self.update_hosts(message.parent_uuid)
 		
-		if message.command == 'claim-master':
-			self.known_hosts[message.parent_uuid].master = 'negotiating'
-		elif message.command == 'became-master':
-			for key in self.known_hosts.keys():
-				if key == message.parent_uuid:
-					self.known_hosts[key].master = 'yes'
-				else:
-					self.known_hosts[key].master = 'no'
+		if message.parent_uuid in self.known_hosts.keys():
+			if message.command == 'claim-master':
+				self.known_hosts[message.parent_uuid].master = 'negotiating'
+			elif message.command == 'became-master':
+				for key in self.known_hosts.keys():
+					if key == message.parent_uuid:
+						self.known_hosts[key].master = 'yes'
+					else:
+						self.known_hosts[key].master = 'no'
 		
 	@staticmethod
 	def run(port):
