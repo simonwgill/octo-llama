@@ -9,3 +9,4 @@ publisher = PikaPublisher("demonstration")
 from effector_llama.effector import Effector
 effector = Effector(publisher, "trend_to_track", "simonwgill@gmail.com")
 effector.monitor()
+effector.begin_wait_loop()

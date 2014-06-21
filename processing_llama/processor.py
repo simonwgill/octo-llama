@@ -9,6 +9,7 @@ from pycassa.cassandra import ttypes
 import datetime
 import sys
 import traceback
+import logging
 
 class Processor(Llama):
     def __init__(self, client, qname):
@@ -44,11 +45,11 @@ class Processor(Llama):
             self.track_trend(trend_name, country_specifics['data']['query'], filter(lambda x: x != "data", country_specifics.keys()))
       except:
 		exc, value, exctraceback = sys.exc_info()
-		print "Error in processing_llama.processor.Processor.do_action: ", exc, value
+		logging.error("Error in processing_llama.processor.Processor.do_action:\n" + traceback.format_exc())
 		traceback.print_tb(exctraceback)
         
     def track_trend(self, trend_name, query, woeids):
-      print "Tracking %s from %s" % (trend_name, woeids)
+      logging.info("Tracking %s from %s" % (trend_name, woeids))
       self.mark_tracking(trend_name)
       self.publish((trend_name, query, woeids), "trend_to_track")
 

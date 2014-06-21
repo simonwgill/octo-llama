@@ -8,11 +8,11 @@ from pycassa.index import *
 from pycassa.cassandra import ttypes
 import datetime
 import smtplib
-import sys
+import logging
 
 class Effector(Llama):
     def __init__(self, client, qname, address):
-        super(Effector, self).__init__(client, uuid.uuid4().hex)
+        super(Effector, self).__init__(client, qname)
         self.address = address
 
     def do_message(self, message):
@@ -31,6 +31,6 @@ You should check out twitter using the api query string %s
       try:
         smtpObj = smtplib.SMTP('localhost')
         smtpObj.sendmail(sender, receivers, message)         
-        print "Successfully sent email"
+        logging.info("Successfully sent email")
       except smtplib.SMTPException:
-        print "Error: unable to send email", sys.exc_info()
+        logging.error("Unable to send email", traceback.format_exc())

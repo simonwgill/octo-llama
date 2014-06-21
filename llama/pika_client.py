@@ -1,4 +1,6 @@
 import pika
+import logging
+import traceback
 
 class PikaPublisher(object):
     def __init__(self, exchange_name):
@@ -6,6 +8,7 @@ class PikaPublisher(object):
         self.queue_exists = False
 
     def publish(self, message, routing_key):
+      try: 
         conn = pika.AsyncoreConnection(pika.ConnectionParameters(
                 '127.0.0.1',
                 credentials=pika.PlainCredentials('guest', 'guest')))
@@ -25,13 +28,17 @@ class PikaPublisher(object):
                          block_on_flow_control = True)
         ch.close()
         conn.close()
-    
+      except:
+        logging.error("Could not send message to %s.%s because:%s" % (self.exchange_name, routing_key, traceback.format_exc()))
+
     def monitor(self, qname, callback):
         conn = pika.AsyncoreConnection(pika.ConnectionParameters(
                 '127.0.0.1',
                 credentials=pika.PlainCredentials('guest', 'guest')))
 
         ch = conn.channel()
+
+        ch.exchange_declare(exchange=self.exchange_name, type="fanout", durable=False, auto_delete=False)
 
         if not self.queue_exists:
             ch.queue_declare(queue=qname, durable=False, exclusive=False, auto_delete=False)
