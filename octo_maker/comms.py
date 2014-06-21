@@ -48,7 +48,8 @@ class Communications(object):
 		self.master_cooldown_seconds = 30.0
 		self.master_cooldown_timeout = TimePoint()
 		
-		self.connection = None
+		self.tx_connection = None
+		self.rx_connection = None
 		self.tx_channel = None
 		self.rx_channel = None
 		self.queue_name = None
@@ -229,12 +230,16 @@ class Communications(object):
 		self.thread.start()
 	
 	def mainloop(self):
-		self.connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+		self.tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
 			'localhost',
 			credentials = pika.PlainCredentials('guest', 'guest')
 		))
-		self.rx_channel = self.connection.channel()
-		self.tx_channel = self.connection.channel()
+		self.rx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+			'localhost',
+			credentials = pika.PlainCredentials('guest', 'guest')
+		))
+		self.rx_channel = self.tx_connection.channel()
+		self.tx_channel = self.rx_connection.channel()
 		
 		self.rx_channel.exchange_declare(
 			exchange = 'octo-maker.process-heartbeat',
