@@ -29,10 +29,7 @@ class Listener(Llama):
 
     def save_trend(self, as_of, name, query):
         logging.info("In WOEID %s at %s, %s was trending." % (self.woeid, as_of, name))
-<<<<<<< HEAD
 
-=======
->>>>>>> 7469bab8c84540e82f067a9b0546d8f648647b23
     def do_action(self):
         try:
           trends = self.twitter.get_place_trends(id=self.woeid)[0]
@@ -42,7 +39,3 @@ class Listener(Llama):
             self.publish((self.woeid, as_of, trend['name'], trend['query']))
         except exceptions.TwythonRateLimitError:
             logging.warning("Rate limit reached. Will retry later.")
-<<<<<<< HEAD
-=======
-            print "Rate limit reached. Will retry later."
->>>>>>> 7469bab8c84540e82f067a9b0546d8f648647b23
