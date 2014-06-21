@@ -18,11 +18,10 @@ class Llama(object):
   def handle(self, channel, delivery_tag, body):
     try:
       message = pickle.loads(body)
-      if (message[0] != self.queuename):
-        return
+      if (message[0] == self.queuename):
+        self.do_message(message[1])
       logging.debug("Ack of delivery_tag %s" % delivery_tag)
       channel.basic_ack(delivery_tag = delivery_tag)
-      self.do_message(message[1])
     except:
       logging.warning("Rejecting message with delivery_tag %s due to exception:\n %s" % (delivery_tag, traceback.format_exc()))
       channel.basic_reject(delivery_tag = delivery_tag, requeue=False)
