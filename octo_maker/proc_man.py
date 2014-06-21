@@ -4,10 +4,21 @@ import threading
 import datetime
 import shlex
 import time
+import sys
+import os
 
 from utils import TimePoint
 
 now = datetime.datetime.now
+
+def check_pid(pid):        
+    """ Check For the existence of a unix pid. """
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    else:
+        return True
 
 class LocalProcess(object):
 	def __init__(self, our_pid, invocation):
@@ -16,15 +27,16 @@ class LocalProcess(object):
 		self.retries = 0
 		self.max_retries = 5
 		
-		self.process_handle = None
 		self.invocation = invocation
 	
 	def invoke(self):
 		print "[octo-maker:proc-man] invoking process: '%s'" % self.invocation
 		parsed = shlex.split(self.invocation)
 		try:
-			self.process_handle = subprocess.Popen(parsed)
-			self.os_pid = self.process_handle.pid
+			#self.os_pid = subprocess.Popen(parsed).pid
+			self.os_pid = os.fork()
+			if self.os_pid == 0:
+				sys.exit(subprocess.call(self.invocation, shell=True))
 		except OSError, e:
 			print "os error:", e
 	
@@ -42,10 +54,10 @@ class LocalProcess(object):
 		return still_alive
 	
 	def is_process_alive(self):
-		if self.process_handle is None:
+		if self.os_pid is None:
 			return False
 			
-		return (self.process_handle.poll() is None)
+		return check_pid(self.os_pid)
 
 class ProcessManager(object):
 	def __init__(self):
@@ -169,7 +181,7 @@ class ProcessManager(object):
 	def mainloop(self):
 		while True:
 			if now() < self.next_heartbeat:
-				time.sleep(0.5)
+				time.sleep(0.01)
 				continue
 			self.next_heartbeat = now() + self.heartbeat_period
 			
