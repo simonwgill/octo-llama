@@ -117,8 +117,14 @@ class Communications(object):
 		delivery_mode = None
 		if persistent:
 			delivery_mode = 2
+			
+		tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+			'localhost',
+			credentials = pika.PlainCredentials('guest', 'guest')
+		))
+		tx_channel = tx_connection.channel()
 		
-		self.tx_channel.basic_publish(
+		tx_channel.basic_publish(
 			exchange = exchange,
 			routing_key = queue,
 			body = cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL),
@@ -230,16 +236,16 @@ class Communications(object):
 		self.thread.start()
 	
 	def mainloop(self):
-		self.tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
-			'localhost',
-			credentials = pika.PlainCredentials('guest', 'guest')
-		))
+		#self.tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+		#	'localhost',
+		#	credentials = pika.PlainCredentials('guest', 'guest')
+		#))
 		self.rx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
 			'localhost',
 			credentials = pika.PlainCredentials('guest', 'guest')
 		))
-		self.rx_channel = self.tx_connection.channel()
-		self.tx_channel = self.rx_connection.channel()
+		self.rx_channel = self.rx_connection.channel()
+		#self.tx_channel = self.tx_connection.channel()
 		
 		self.rx_channel.exchange_declare(
 			exchange = 'octo-maker.process-heartbeat',
