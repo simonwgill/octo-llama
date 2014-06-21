@@ -49,9 +49,13 @@ class Communications(object):
 		self.master_cooldown_timeout = TimePoint()
 		
 		self.tx_connection = None
-		self.rx_connection = None
 		self.tx_channel = None
-		self.rx_channel = None
+		
+		self.rx_connection = None
+		self.rx_control_channel = None
+		self.rx_heartbeat_channel = None
+		self.rx_task_channel = None
+		
 		self.queue_name = None
 		
 		self.control_queue_name = None
@@ -172,10 +176,10 @@ class Communications(object):
 		
 		if accepted:
 			print "[octo-maker:comms] accepted task"
-			self.rx_channel.basic_ack(method.delivery_tag)
+			self.rx_task_channel.basic_ack(method.delivery_tag)
 		else:
 			print "[octo-maker:comms] rejected task"
-			self.rx_channel.basic_nack(method.delivery_tag)
+			self.rx_task_channel.basic_nack(method.delivery_tag)
 		
 	def handle_process_heartbeat(self, channel, method, properties, body):
 		message = cPickle.loads(body)
@@ -184,10 +188,10 @@ class Communications(object):
 		
 		if message.parent_uuid == self.queue_name:
 			#print "[octo-maker:comms] ignoring heartbeat echo"
-			self.rx_channel.basic_ack(method.delivery_tag)
+			self.rx_heartbeat_channel.basic_ack(method.delivery_tag)
 		else:
 			self.on_proc_heartbeat(message.parent_uuid, message.process_ids)
-			self.rx_channel.basic_ack(method.delivery_tag)
+			self.rx_heartbeat_channel.basic_ack(method.delivery_tag)
 	
 	def handle_control_message(self, channel, method, properties, body):
 		message = cPickle.loads(body)
@@ -222,7 +226,7 @@ class Communications(object):
 			if is_master is not self.was_master:
 				self.on_master_status_changed(is_master)
 				self.was_master = is_master			
-		self.rx_channel.basic_ack(method.delivery_tag)
+		self.rx_control_channel.basic_ack(method.delivery_tag)
 	
 	def on_local_heartbeat(self):
 		master_node = self.fetch_master_node()
@@ -251,55 +255,57 @@ class Communications(object):
 			'localhost',
 			credentials = pika.PlainCredentials('guest', 'guest')
 		))
-		self.rx_channel = self.rx_connection.channel()
+		self.rx_control_channel = self.rx_connection.channel()
+		self.rx_heartbeat_channel = self.rx_connection.channel()
+		self.rx_task_channel = self.rx_connection.channel()
 		#self.tx_channel = self.tx_connection.channel()
 		
-		self.rx_channel.exchange_declare(
+		self.rx_heartbeat_channel.exchange_declare(
 			exchange = 'octo-maker.process-heartbeat',
 			type = 'fanout'
 		)
 		
-		self.rx_channel.exchange_declare(
+		self.rx_control_channel.exchange_declare(
 			exchange = 'octo-maker.control',
 			type = 'topic'
 		)
 		
-		result = self.rx_channel.queue_declare(exclusive=True)
+		result = self.rx_heartbeat_channel.queue_declare(exclusive=True)
 		self.queue_name = result.queue
 		print "[octo-maker:comms] started as queue '%s'" % self.queue_name
-		self.rx_channel.queue_bind(
+		self.rx_heartbeat_channel.queue_bind(
 			exchange = 'octo-maker.process-heartbeat',
 			queue = self.queue_name
 		)
 		
-		result = self.rx_channel.queue_declare(exclusive=True)
+		result = self.rx_control_channel.queue_declare(exclusive=True)
 		self.control_queue_name = result.queue
 		bindings = ['octo-maker.node.all', 'octo-maker.node.%s' % self.queue_name]
 		for binding in bindings:
-			self.rx_channel.queue_bind(
+			self.rx_control_channel.queue_bind(
 				exchange = 'octo-maker.control',
 				queue = self.control_queue_name,
 				routing_key = binding
 			)
 		
-		self.rx_channel.queue_declare(
+		self.rx_task_channel.queue_declare(
 			queue = 'octo-maker.task-queue',
 			durable = True
 		)
 		
-		self.rx_channel.basic_qos(prefetch_count = 1)
+		self.rx_task_channel.basic_qos(prefetch_count = 1)
 		
-		self.rx_channel.basic_consume(
+		self.rx_task_channel.basic_consume(
 			self.handle_task_delegation,
 			queue = 'octo-maker.task-queue'
 		)
 		
-		self.rx_channel.basic_consume(
+		self.rx_heartbeat_channel.basic_consume(
 			self.handle_process_heartbeat,
 			queue = self.queue_name
 		)
 		
-		self.rx_channel.basic_consume(
+		self.rx_control_channel.basic_consume(
 			self.handle_control_message,
 			queue = self.control_queue_name
 		)
