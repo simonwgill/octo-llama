@@ -59,7 +59,7 @@ class Communications(object):
 		self.known_nodes = {}
 		self.last_cluster_size_estimate = 1
 		
-		self.node_timeout = 10.0
+		self.node_timeout = 50.0
 	
 	def reset_master_claim(self):
 		self.claim_ack_count = 0

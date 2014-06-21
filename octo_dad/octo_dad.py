@@ -202,7 +202,7 @@ class OctoDad(BaseHTTPServer.HTTPServer):
 		too_old = []
 		for key in self.known_hosts.keys():
 			node = self.known_hosts[key]
-			if node.seconds_since_contact() >= 180:
+			if node.seconds_since_contact() >= 240:
 				too_old.append(key)
 		
 		for key in too_old:
