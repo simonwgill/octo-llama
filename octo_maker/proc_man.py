@@ -23,7 +23,7 @@ class LocalProcess(object):
 		print "[octo-maker:proc-man] invoking process: '%s'" % self.invocation
 		parsed = shlex.split(self.invocation)
 		try:
-			self.process_handle = subprocess.Popen(parsed, stdout=subprocess.PIPE)
+			self.process_handle = subprocess.Popen(parsed)
 			self.os_pid = self.process_handle.pid
 		except OSError, e:
 			print "os error:", e
