@@ -28,6 +28,11 @@ $(document).ready(function() {
 			row.append($("<td></td>").text(node.master));
 			row.append($("<td></td>").text(node.last_contact_seconds + " seconds ago"));
 			
+			if(node.last_contact_seconds > 10.0)
+			{
+				row.addClass("old-info");
+			}
+			
 			table.append(row);
 		}
 		

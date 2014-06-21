@@ -25,6 +25,10 @@ td {
 	text-align: center;
 }
 
+.old-info {
+	background-color: #6C2975;
+}
+
 .content-block {
 	border-radius: 5px;
 	background-color: #03AAE4;

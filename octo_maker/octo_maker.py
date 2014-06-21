@@ -27,7 +27,7 @@ class OctoMaker(object):
 	def on_process_local_heartbeat(self, process_ids):
 		self.heartbeat_count += 1
 		#print "[octo-maker] heartbeat", self.heartbeat_count
-		#print "[octo-maker] local '%s' processes: %s" % (self.comms.queue_name[-6:], process_ids)
+		print "[octo-maker] local '%s' processes: %s" % (self.comms.queue_name[-6:], process_ids)
 		self.comms.broadcast_process_heartbeat(process_ids)
 	
 	def on_process_delegation(self, source, process_id):
