@@ -55,9 +55,9 @@ class ProcessManager(object):
 		
 		self.heartbeats = {}
 		
-		self.heartbeat_seconds = 20.0
-		self.timeout_seconds = self.heartbeat_seconds * 2
-		self.warmup_seconds = self.heartbeat_seconds * 4
+		self.heartbeat_seconds = 5.0
+		self.timeout_seconds = self.heartbeat_seconds * 4
+		self.warmup_seconds = self.heartbeat_seconds * 8
 		
 		self.heartbeat_period = datetime.timedelta(seconds = self.heartbeat_seconds)
 		self.next_heartbeat = now() + self.heartbeat_period
