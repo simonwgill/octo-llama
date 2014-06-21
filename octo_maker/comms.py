@@ -117,25 +117,28 @@ class Communications(object):
 		delivery_mode = None
 		if persistent:
 			delivery_mode = 2
+		
+		try:
+			tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+				'localhost',
+				credentials = pika.PlainCredentials('guest', 'guest')
+			))
+			tx_channel = tx_connection.channel()
 			
-		tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
-			'localhost',
-			credentials = pika.PlainCredentials('guest', 'guest')
-		))
-		tx_channel = tx_connection.channel()
-		
-		tx_channel.basic_publish(
-			exchange = exchange,
-			routing_key = queue,
-			body = cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL),
-			properties = pika.BasicProperties(
-				delivery_mode = delivery_mode
-			),
-			block_on_flow_control = True
-		)
-		
-		tx_channel.close()
-		tx_connection.close()
+			tx_channel.basic_publish(
+				exchange = exchange,
+				routing_key = queue,
+				body = cPickle.dumps(message, cPickle.HIGHEST_PROTOCOL),
+				properties = pika.BasicProperties(
+					delivery_mode = delivery_mode
+				),
+				block_on_flow_control = True
+			)
+			
+			tx_channel.close()
+			tx_connection.close()
+		except:
+			pass
 	
 	def fetch_master_node(self):
 		for host in self.known_nodes.values():
