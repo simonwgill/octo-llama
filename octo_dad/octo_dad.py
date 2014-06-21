@@ -11,6 +11,12 @@ class ProcessHeartbeatMessage(object):
 		self.parent_uuid = parent_uuid
 		self.process_ids = process_ids
 
+class ControlMessage(object):
+	def __init__(self, parent_uuid, command, values):
+		self.parent_uuid = parent_uuid
+		self.command = command
+		self.values = values
+
 class WebException(Exception):
 	def __init__(self, code, message):
 		self.code = code
@@ -83,7 +89,7 @@ class OctoDadHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 class KnownHost(object):
 	def __init__(self, name, processes):
 		self.name = name
-		self.master = False
+		self.master = 'unknown'
 		self.processes = processes
 		self.last_contact = datetime.datetime.now()
 		
@@ -163,9 +169,24 @@ class OctoDad(BaseHTTPServer.HTTPServer):
 			exchange = 'octo-maker.process-heartbeat',
 			queue = queue_name
 		)
+		
+		result = channel.queue_declare(exclusive=True)
+		control_queue_name = result.queue
+		
+		channel.queue_bind(
+			exchange = 'octo-maker.control',
+			queue = control_queue_name,
+			routing_key = 'octo-maker.node.*'
+		)
+		
 		channel.basic_consume(
 			self.handle_process_heartbeat,
 			queue = queue_name
+		)
+		
+		channel.basic_consume(
+			self.handle_control_message,
+			queue = control_queue_name
 		)
 		
 		pika.asyncore_loop()
@@ -178,6 +199,23 @@ class OctoDad(BaseHTTPServer.HTTPServer):
 			self.known_hosts[message.parent_uuid] = KnownHost(message.parent_uuid, message.process_ids)
 		else:
 			self.known_hosts[message.parent_uuid].heard_from(message.process_ids)
+	
+	def handle_control_message(self, channel, method, properties, body):
+		message = cPickle.loads(body)
+		
+		if message.parent_uuid not in self.known_hosts.keys():
+			self.known_hosts[message.parent_uuid] = KnownHost(message.parent_uuid, [])
+		else:
+			self.known_hosts[message.parent_uuid].heard_from()
+		
+		if message.command == 'claim-master':
+			self.known_hosts[message.parent_uuid].master = 'negotiating'
+		elif message.command == 'became-master':
+			for key in self.known_hosts.key():
+				if key == message.parent_uuid:
+					self.known_hosts[key].master = 'yes'
+				else:
+					self.known_hosts[key].master = 'no'
 		
 	@staticmethod
 	def run(port):
