@@ -4,6 +4,7 @@ import threading
 import base64
 import traceback
 import logging
+import datetime
 
 DEFAULT_SLEEP_TIME = 0.5
 
@@ -43,7 +44,13 @@ class Llama(object):
   def begin_wait_loop(self):
     while True:
       self.do_action()
-      time.sleep(self.get_sleep_time())
+      self.delay(self.get_sleep_time())
+
+  def delay(self, timing):
+    period = datetime.timedelta(seconds = timing)
+    end = datetime.datetime.now() + period
+    while datetime.datetime.now() < end:
+      time.sleep(0.5)
       
   def do_action(self):
     pass
