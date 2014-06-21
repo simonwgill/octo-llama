@@ -37,4 +37,4 @@ class Listener(Llama):
             self.save_trend(as_of, trend['name'], trend['query'])
             self.publish((self.woeid, as_of, trend['name'], trend['query']))
         except exceptions.TwythonRateLimitError:
-            print "Rate limit reached. Will retry later."
+            logging.warning("Rate limit reached. Will retry later.")
