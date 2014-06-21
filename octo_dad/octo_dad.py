@@ -211,7 +211,7 @@ class OctoDad(BaseHTTPServer.HTTPServer):
 		if message.command == 'claim-master':
 			self.known_hosts[message.parent_uuid].master = 'negotiating'
 		elif message.command == 'became-master':
-			for key in self.known_hosts.key():
+			for key in self.known_hosts.keys():
 				if key == message.parent_uuid:
 					self.known_hosts[key].master = 'yes'
 				else:

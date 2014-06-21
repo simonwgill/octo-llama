@@ -1,8 +1,13 @@
 
+import datetime
 import random
 import time
 
 lowest_time = 20
 highest_time = 120
 
-time.sleep(random.randint(lowest_time, highest_time))
+period = datetime.timedelta(seconds = random.randint(lowest_time, highest_time))
+end = datetime.datetime.now() + period
+
+while datetime.datetime.now() < end:
+	time.sleep(0.1)
