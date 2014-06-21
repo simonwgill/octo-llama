@@ -141,8 +141,8 @@ class Communications(object):
 			
 			tx_channel.close()
 			tx_connection.close()
-		except:
-			pass
+		except Exception, e:
+			print "ignoring:", e
 	
 	def fetch_master_node(self):
 		for host in self.known_nodes.values():

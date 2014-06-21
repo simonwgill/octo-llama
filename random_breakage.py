@@ -10,4 +10,4 @@ period = datetime.timedelta(seconds = random.randint(lowest_time, highest_time))
 end = datetime.datetime.now() + period
 
 while datetime.datetime.now() < end:
-	time.sleep(0.1)
+	pass
