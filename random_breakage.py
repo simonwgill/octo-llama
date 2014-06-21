@@ -2,4 +2,7 @@
 import random
 import time
 
-time.sleep(random.randint(10, 60))
+lowest_time = 20
+highest_time = 120
+
+time.sleep(random.randint(lowest_time, highest_time))

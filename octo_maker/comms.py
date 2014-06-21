@@ -2,6 +2,7 @@
 import threading
 import datetime
 import cPickle
+import random
 import pika
 
 from utils import TimePoint
@@ -28,6 +29,9 @@ class KnownNode(object):
 		self.process_ids = process_ids
 		self.is_master = False
 		self.last_contact = TimePoint()
+	
+	def short_name(self):
+		return self.parent_uuid[-6:]
 
 class Communications(object):
 	def __init__(self):
@@ -36,12 +40,13 @@ class Communications(object):
 		self.on_cluster_size_estimate = lambda x: None
 		self.thread = None
 		
-		self.claimed_master = False
 		self.claim_ack_count = 0
 		self.was_master = False
-		self.master_claim_seconds = 60.0
-		self.master_claim_period = datetime.timedelta(seconds = self.master_claim_seconds)
-		self.master_claim_timeout = datetime.datetime.now()
+		self.last_acked = None
+		self.master_claim_seconds = 20.0
+		self.master_claim_timeout = TimePoint()
+		self.master_cooldown_seconds = 30.0
+		self.master_cooldown_timeout = TimePoint()
 		
 		self.connection = None
 		self.channel = None
@@ -52,10 +57,9 @@ class Communications(object):
 		self.known_nodes = {}
 		self.last_cluster_size_estimate = 1
 		
-		self.node_timeout = 60.0
+		self.node_timeout = 10.0
 	
 	def reset_master_claim(self):
-		self.claimed_master = False
 		self.claim_ack_count = 0
 	
 	def set_master(self, parent_uuid):
@@ -82,11 +86,19 @@ class Communications(object):
 		self.broadcast_via_exchange(
 			'octo-maker.process-heartbeat', '', message, False
 		)
+		
+		self.on_local_heartbeat()
 	
 	def claim_master(self):
-		self.claimed_master = True
-		self.claim_ack_count = 0
-		self.send_control_message('all', 'claim-master')
+		print "[octo-maker:comms] wants to claim master"
+		if self.master_cooldown_timeout.is_past_point():
+			print "\tmaking claim"
+			self.master_cooldown_timeout.advance(self.master_cooldown_seconds)
+			
+			self.claim_ack_count = 0
+			self.send_control_message('all', 'claim-master')
+		else:
+			print "\tstill cooling down"
 	
 	def send_control_message(self, target, command, values = {}):
 		self.broadcast_via_exchange(
@@ -112,6 +124,18 @@ class Communications(object):
 				delivery_mode = delivery_mode
 			)
 		)
+	
+	def fetch_master_node(self):
+		for host in self.known_nodes.values():
+			if host.is_master:
+				return host
+		return None
+	
+	def fetch_node(self, parent_uuid):
+		for host in self.known_nodes.values():
+			if host.parent_uuid == parent_uuid:
+				return host
+		return None
 	
 	def update_known_host(self, parent_uuid, processes = []):
 		if parent_uuid not in self.known_nodes.keys():
@@ -154,26 +178,49 @@ class Communications(object):
 		message = cPickle.loads(body)
 		
 		self.update_known_host(message.parent_uuid)
+		host = self.fetch_node(message.parent_uuid)
 		
 		if message.command == 'claim-master':
-			if datetime.datetime.now() >= self.master_claim_timeout:
-				self.master_claim_timeout += self.master_claim_period
+			is_self = (host.parent_uuid == self.queue_name)
+			can_acknowledge = not is_self or random.choice([True, False])
+			acknowledge = self.master_claim_timeout.is_past_point() or message.parent_uuid == self.last_acked
+			if acknowledge and can_acknowledge:
+				self.master_claim_timeout.advance(self.master_claim_seconds)
+				print "[octo-maker:comms] ack'ing master claim:", host.short_name()
 				
+				self.last_acked = message.parent_uuid
 				self.send_control_message(message.parent_uuid, 'ack-claim')
+			else:
+				pass # print "[octo-maker:comms] naq'ing master claim"
 		elif message.command == 'ack-claim':
-			if self.claimed_master:
-				self.claim_ack_count += 1
-				if self.claim_ack_count >= (self.estimate_cluster_size() * 0.5):
-					self.send_control_message('all', 'became-master')
+			self.claim_ack_count += 1
+			print "[octo-maker:comms] received a vote to be master, total:", self.claim_ack_count
+			if self.claim_ack_count > (self.estimate_cluster_size() * 0.5):
+				self.send_control_message('all', 'became-master')
+				print "[octo-maker:comms] won negotiation, notifying cluster"
 		elif message.command == 'became-master':
 			self.reset_master_claim()
 			self.set_master(message.parent_uuid)
 			is_master = message.parent_uuid == self.queue_name
+			node = self.fetch_node(message.parent_uuid)
+			#print "[octo-maker:comms] node '%s' became master" % node.short_name()
 			if is_master is not self.was_master:
 				self.on_master_status_changed(is_master)
-				self.was_master = is_master
-		
+				self.was_master = is_master			
 		self.channel.basic_ack(method.delivery_tag)
+	
+	def on_local_heartbeat(self):
+		master_node = self.fetch_master_node()
+		if master_node is not None:
+			#print "[octo-maker:comms] time since heard from master:", master_node.last_contact.elapsed_seconds()
+			if master_node.last_contact.does_elapsed_exceed(self.node_timeout):
+				# only do it once per cooldown period!
+				if self.master_cooldown_timeout.is_past_point():
+					print "[octo-maker:comms] no comms from master, renogotiating master"
+					self.claim_master()
+		elif self.master_cooldown_timeout.is_past_point():
+			print "[octo-maker:comms] no known master, starting negotiations"
+			self.claim_master()
 	
 	def start_async(self):
 		self.thread = threading.Thread(target = self.mainloop)
