@@ -118,7 +118,7 @@ class Communications(object):
 		if persistent:
 			delivery_mode = 2
 			
-		tx_connection = pika.AsyncoreConnection(pika.ConnectionParameters(
+		tx_connection = pika.BlockingConnection(pika.ConnectionParameters(
 			'localhost',
 			credentials = pika.PlainCredentials('guest', 'guest')
 		))
