@@ -8,6 +8,7 @@ from pycassa.index import *
 from pycassa.cassandra import ttypes
 from datetime import datetime
 import logging
+
 from twython import Twython, exceptions
 
 TWITTER_API_KEY = "emuanjY83cDBsPbXSSTu2qgU6"
@@ -28,7 +29,6 @@ class Listener(Llama):
 
     def save_trend(self, as_of, name, query):
         logging.info("In WOEID %s at %s, %s was trending." % (self.woeid, as_of, name))
-
     def do_action(self):
         try:
           trends = self.twitter.get_place_trends(id=self.woeid)[0]
@@ -38,3 +38,4 @@ class Listener(Llama):
             self.publish((self.woeid, as_of, trend['name'], trend['query']))
         except exceptions.TwythonRateLimitError:
             logging.warning("Rate limit reached. Will retry later.")
+            print "Rate limit reached. Will retry later."
